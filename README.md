@@ -1,14 +1,14 @@
-# Deck Lite 0.4.0
+# Deck Lite 0.4.2
 
 Deck is an experimental x86-64 operating system with its own C/Assembly
 kernel and BIOS loader. Boot starts init, password login and a protected
-user shell. This release adds basic IPv4 networking, ping and background jobs. TCP/HTTP, external packages and Vim are not available.
+user shell. This release adds HTTPS downloads with TLS 1.2 certificate validation. External packages and Vim are not available.
 
 ## Start
 
-Open `Abrir-Deck.desktop` to start the installed `Deck-Lite-040` VM.
-Existing accounts, passwords and personal files are migrated from your 0.3.2
-disk. The original 0.3.2 VM remains available through `Abrir-Deck-032.desktop`.
+Open `Abrir-Deck.desktop` to start the installed `Deck-Lite-042` VM.
+Existing accounts, passwords and personal files are migrated from your 0.4.0
+disk. The original 0.4.0 VM remains available through `Abrir-Deck-040.desktop`.
 On a fresh installation, choose and confirm the root password (8–64 bytes).
 Typing passwords is hidden. Initial root setup saves automatically on disk.
 
@@ -88,7 +88,7 @@ substitution. `rescue` opens the kernel console for interactive root sessions.
 
 ## Images, installation and upgrades
 
-ISO: `dist/Deck-Lite-0.4.0-amd64.iso`. Use BIOS, 128 MiB RAM, one CPU,
+ISO: `dist/Deck-Lite-0.4.2-amd64.iso`. Use BIOS, 128 MiB RAM, one CPU,
 IDE PIIX4 and a new 64 MiB virtual disk. The installer command is `install ada0`;
 it requires typing `ERASE ada0`. Shut down, detach the ISO and boot the disk.
 Changes on the uninstalled live ISO are volatile.
@@ -106,17 +106,17 @@ Requires Clang/LLD, llvm-objcopy, makefs, Perl and VirtualBox for VM tests.
 ```sh
 make
 make test
-sh scripts/test-session.sh Deck-Lite-040-session-check
+sh scripts/test-session.sh Deck-Lite-042-session-check
 ```
 
 Storage-specific VM regressions are in `scripts/test-storage-vm.pl`; they use
 migrated disposable fixture accounts, not real credentials. They check large
 files, full filesystem handling, directory operations, the editor, permissions
-and reboot persistence. See [release notes](docs/RELEASE-0.4.0.md) for evidence
+and reboot persistence. See [release notes](docs/RELEASE-0.4.2.md) for evidence
 and [the English test guide](docs/TESTING-0.3.1.md) for a repeatable procedure.
 
 Limits still include eight accounts, eight task slots, no supplementary
-groups, no symlinks, no general VFS/mount support, no UEFI/USB/TCP, and no
+groups, no symlinks, no general VFS/mount support, no UEFI/USB, and no
 external OS binary ABI. Password hashing uses PBKDF2-HMAC-SHA256; this prototype
 has not undergone a security audit. Historical Portuguese documentation remains
 unchanged; new documentation and system text are written in English.
@@ -138,7 +138,7 @@ prototype tools, not full POSIX replacements. See
 
 ## Networking and background jobs (0.4.0)
 
-The installed Deck-Lite-040 VM uses Intel 82540EM bridged to re0. DHCP
+The installed Deck-Lite-042 VM uses Intel 82540EM bridged to re0. DHCP
 configures an address on the router's LAN automatically. The portable VM
 creation helper still defaults to NAT.
 
@@ -157,3 +157,38 @@ Ctrl-C cancels the foreground task. `kill PID` terminates an owned process;
 `dhclient` restarts DHCP as root. External ping by IP and Google hostname passed after switching the installed
 VM from NAT to bridge mode. The NAT path on this host still times out. See the
 [0.4.0 release notes](docs/RELEASE-0.4.0.md) for limits and test procedures.
+
+## HTTP downloads (0.4.1)
+
+```text
+fetch -o example.html http://example.com/
+grep Example example.html
+fetch -o - http://example.com/ | wc -c
+fetch -o background.html http://example.com/ &
+wait
+```
+
+Fetch supports HTTP, explicit ports, Content-Length, chunked responses and
+orderly EOF. Downloads are limited to 65536 bytes. A destination passed with
+`-o FILE` is replaced only after a complete valid response; failures and Ctrl-C
+preserve an existing file. File permissions and explicit disk sync still apply.
+HTTPS is supported with certificate validation; redirects and compression are not implemented. See the
+[0.4.2 release notes](docs/RELEASE-0.4.2.md) for socket APIs, limits and tests.
+
+## HTTPS downloads (0.4.2)
+
+```text
+fetch -o example.html https://example.com/
+grep Example example.html
+fetch -o - https://example.com/ | wc -c
+```
+
+HTTPS checks the certificate chain, hostname and validity dates. It requires a
+UTC hardware clock and RDRAND support; if either is unavailable it refuses the
+connection. Root-owned `/etc/tls/roots.bin` contains 15 selected public roots.
+There is no insecure mode or plaintext fallback. Certificate errors preserve
+an existing destination when using `-o FILE`.
+
+This bounded TLS 1.2 client has no TLS 1.3, revocation checks, IP-address
+certificate identities or full browser PKI policies. Some sites are unsupported.
+See [the release notes](docs/RELEASE-0.4.2.md) for protocol, trust and test details.
